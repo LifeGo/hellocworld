@@ -6,6 +6,15 @@
 #define MAX_FILE_NUM					(8*1024)
 #define MAX_LINE_LENGTH					(8*1024)
 
+typedef struct _tag_backtest_argv
+{
+	int beg;
+	int end;
+	int max_stock;
+	float money;
+	float taxrate;
+} backtest_argv;
+
 typedef struct _tag_day_item
 {
 	int date;
@@ -342,6 +351,158 @@ int load_csv(char *filename)
 	return 0;
 }
 
+#define MAX_TRADE_DAY 			(360*30)
+
+int trade_day[ MAX_TRADE_DAY ];
+int trade_day_cnt = 0;
+
+int int_sort(int *array, int len)
+{
+	int idx = 0;
+	int beg = 0;
+	int end = len-1;
+
+	//printf("\n===");
+	//for (idx=0; idx<len; idx++)
+	//	printf("%d ", array[idx]);
+	//printf("===\n");
+	while ( beg < end )
+	{
+		int minid = beg;
+		int maxid = end;
+		int value = 0;
+
+		value = array[beg];
+		if (value > array[end])
+		{
+			array[beg] = array[end];
+			array[end] = value;
+		}
+
+		for (idx=beg; idx<=end; idx++)
+		{
+			value = array[idx];
+			if ( value > array[maxid]) maxid = idx;
+			if ( value < array[minid]) minid = idx;
+		}
+
+		value = array[maxid];
+		array[maxid] = array[end];
+		array[end] = value;
+		//for (idx=0; idx<len; idx++)
+		//	printf("%d ", array[idx]);
+		//printf("\n");
+
+		value = array[minid];
+		array[minid] = array[beg];
+		array[beg] = value;
+		//for (idx=0; idx<len; idx++)
+		//	printf("%d ", array[idx]);
+		//printf("\n");
+
+		beg++; end--;
+	}
+
+	//printf("\n");
+	//printf("\n");
+	return 0;
+}
+
+int get_tradeday_list()
+{
+	int idx   = 0;
+	int idy   = 0;
+	int idz   = 0;
+	int days  = 0;
+	int find  = 0;
+	int today = 0;
+	stock_data *stock;
+
+	printf("\ntrade_day_cnt = %d\n", trade_day_cnt);
+	for (idx=0; idx<stock_cnt; idx++)
+	{
+		stock = (stock_data *)stock_mem[idx];
+		days = stock->total;
+		//printf("code:<%s> stockid=%d total=%d\n",
+		//		stock->code, stock->stockid, stock->total);
+		for (idy=0; idy<days; idy++)
+		{
+			find = 0;
+			today = stock->array[idy].date;
+			for (idz=0; idz<trade_day_cnt; idz++)
+			{
+				if (today == trade_day[idz])
+				{
+					find = 1;
+					break;
+				}
+			}
+			if (0 == find)
+			{
+				trade_day[trade_day_cnt++] = today;
+			}
+		}
+	}
+
+	printf("trade_day_cnt = %d\n", trade_day_cnt);
+	int_sort(trade_day, trade_day_cnt);
+
+	int *day1 = &trade_day[0];
+	int *day2 = &trade_day[1];
+	for (idx=0; idx<trade_day_cnt-1; idx++)
+	{
+		if ( *day1 >= *day2 )
+			printf("ERROR: idx = %d\n", idx);
+		day1++;
+		day2++;
+	}
+
+	return 1;
+}
+
+
+int back_test_go(backtest_argv *bt)
+{
+	int idx   = 0;
+	int idy   = 0;
+	int beg   = 20100101;
+	int end   = 20101231;
+	int days  = 0;
+	int *today = trade_day;
+	stock_data *stock;
+
+	if (bt == NULL) return -1;
+
+	beg = bt->beg;
+	end = bt->end;
+	while (*today < beg)
+	{
+		today++;
+	}
+
+	while (*today <= end)
+	{
+		printf("Today: %d\n", *today);
+		for (idx=0; idx<stock_cnt; idx++)
+		{
+			stock = (stock_data *)stock_mem[idx];
+			//printf("code:<%s> name:<%s> stockid=%d total=%d\n", stock->code, stock->name, stock->stockid, stock->total);
+			days = stock->total;
+			for (idy=0; idy<days; idy++)
+			{
+				if (*today == stock->array[idy].date)
+				{
+					printf("stockid=%d close =%.02f\n", stock->stockid, stock->array[idy].close);
+				}
+			}
+		}
+
+		today++;
+	}
+
+	return 1;
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 0;
@@ -355,19 +516,30 @@ int main(int argc, char **argv)
 
 	for (idx=0; idx<index_cnt; idx++)
 	{
-		printf("index_file:[%s]\r", index_file[idx]);
+		printf("index_file:[%s]\n", index_file[idx]);
 		ret = load_csv(index_file[idx]);
 	}
 
 	if (index_mem != NULL)
 		free(index_mem);
-
+#if 0
 	for (idx=0; idx<stock_cnt; idx++)
 	{
 		stock = (stock_data *)stock_mem[idx];
-		printf("code:<%s> name:<%s> stockid=%d total=%d\r\n",
+		printf("code:<%s> name:<%s> stockid=%d total=%d\n",
 				stock->code, stock->name, stock->stockid, stock->total);
 	}
+#endif
+	get_tradeday_list();
+
+	backtest_argv btargv;
+	btargv.beg = 20100101;
+	btargv.end = 20110101;
+	btargv.max_stock = 20;
+	btargv.money = 100 * 10000.00;
+	btargv.taxrate = 0.001;
+
+	back_test_go(&btargv);
 
 	for (idx=0; idx<stock_cnt; idx++)
 	{
