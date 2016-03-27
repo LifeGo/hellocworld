@@ -64,26 +64,26 @@ int  stock_cnt = 0;
 #define DEFAULT_DATE            (19770218)
 int str_to_date(char *istr)
 {
-    int idx = 0;
-    int idate = DEFAULT_DATE;
-    char date[12];
-    char *cp = istr;
+	int idx = 0;
+	int idate = DEFAULT_DATE;
+	char date[12];
+	char *cp = istr;
 
-    if (cp == NULL)
-        return DEFAULT_DATE;
-    
-    while (*cp != '\0')
-    {
-        if ( (*cp >= '0') && (*cp <= '9') && (*cp != '-') )
-            date[idx++] = *cp;
-        else if (*cp != '-')
-            return DEFAULT_DATE;
-        cp++;
-    }
+	if (cp == NULL)
+		return DEFAULT_DATE;
 
-    date[idx] = '\0';
+	while (*cp != '\0')
+	{
+		if ( (*cp >= '0') && (*cp <= '9') && (*cp != '-') )
+			date[idx++] = *cp;
+		else if (*cp != '-')
+			return DEFAULT_DATE;
+		cp++;
+	}
 
-    return atoi(date);
+	date[idx] = '\0';
+
+	return atoi(date);
 }
 
 int str_to_stockid(char *istr)
@@ -110,7 +110,6 @@ int str_to_stockid(char *istr)
 	return atoi(date);
 }
 
-#if 1
 int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 {
 	int cnt = 0;
@@ -131,7 +130,7 @@ int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 			first = 1;
 			continue;
 		}
-		if (first == 1) 
+		if (first == 1)
 		{
 			first = 0;
 			item[cnt++] = cp;
@@ -168,39 +167,6 @@ int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 
 	return cnt;
 }
-#else
-int parse_line(char *ibuf, char *obuf, char **oidx)
-{
-	int idx = 0;
-	int first = 0;
-	char *cp= NULL;
-
-	if ( (oidx == NULL) || (obuf == NULL) )
-		return -1;
-
-	strcpy(obuf, ibuf);
-	cp = obuf;
-
-	while (*cp != '\0')
-	{
-		//if( (*cp == ':') || (*cp == '#') || (*cp == '$') )
-		if ( (*cp == '\t') || (*cp == ' ') || (*cp == ',') )
-		{
-			*cp++ = '\0';;
-			first = 1;
-			continue;
-		}
-		if (first == 1) 
-		{
-			first = 0;
-			oidx[idx++] = cp;
-		}
-		cp++;
-	}
-
-	return idx;
-}
-#endif
 
 int load_index(char *filename)
 {
@@ -255,20 +221,6 @@ int load_index(char *filename)
 
 	return 0;
 }
-#if 0
-int cvs_to_mem(char *in, char *out)
-{
-	char *temp_mem = NULL;
-	temp_mem = (char *)malloc( (size_t)(filelen+128) );
-	if (temp_mem == NULL)
-	{
-		printf("memory not enough memory.\n");
-		fclose(fin);
-		return -1;
-	}
-	memset((void *)temp_mem, 0x00, filelen+128);
-}
-#endif
 
 int load_csv(char *filename)
 {
@@ -336,37 +288,37 @@ int load_csv(char *filename)
 				item_buf[linelen  ] = '\0';
 				cnt = parse_line(item_buf, scode, sname, &daydata);
 				if (cnt > 0)
-                {
+				{
 					if (stock->code[0] == '\0') strcpy(stock->code, scode);
 					if (stock->name[0] == '\0') strcpy(stock->name, sname);
 					memcpy(&stock->array[day_cnt], &daydata, sizeof(day_data));
 					day_cnt++;
 #if 0 //for Debug
-                    printf("\n item.date    = %d\n" , daydata.date   );
-                    printf(" item.open    = %.02f\n", daydata.open   );
-                    printf(" item.close   = %.02f\n", daydata.close  );
-                    printf(" item.high    = %.02f\n", daydata.high   );
-                    printf(" item.low     = %.02f\n", daydata.low    );
-                    printf(" item.ma5     = %.02f\n", daydata.ma5    );
-                    printf(" item.ma10    = %.02f\n", daydata.ma10   );
-                    printf(" item.ma13    = %.02f\n", daydata.ma13   );
-                    printf(" item.ma21    = %.02f\n", daydata.ma21   );
-                    printf(" item.ma34    = %.02f\n", daydata.ma34   );
-                    printf(" item.ma55    = %.02f\n", daydata.ma55   );
-                    printf(" item.ma89    = %.02f\n", daydata.ma89   );
-                    printf(" item.ma144   = %.02f\n", daydata.ma144  );
-                    printf(" item.ma233   = %.02f\n", daydata.ma233  );
-                    printf(" item.macd    = %.02f\n", daydata.macd   );
-                    printf(" item.diff    = %.02f\n", daydata.diff   );
-                    printf(" item.dea     = %.02f\n", daydata.dea    );
-                    printf(" item.bollupr = %.02f\n", daydata.bollupr);
-                    printf(" item.bollmid = %.02f\n", daydata.bollmid);
-                    printf(" item.bolldwn = %.02f\n", daydata.bolldwn);
-                    printf(" item.cci14   = %.02f\n", daydata.cci14  );
-                    printf(" item.cci21   = %.02f\n", daydata.cci21  );
-                    printf(" item.cci55   = %.02f\n", daydata.cci55  );
+					printf("\n item.date    = %d\n" , daydata.date   );
+					printf(" item.open    = %.02f\n", daydata.open   );
+					printf(" item.close   = %.02f\n", daydata.close  );
+					printf(" item.high    = %.02f\n", daydata.high   );
+					printf(" item.low     = %.02f\n", daydata.low    );
+					printf(" item.ma5     = %.02f\n", daydata.ma5    );
+					printf(" item.ma10    = %.02f\n", daydata.ma10   );
+					printf(" item.ma13    = %.02f\n", daydata.ma13   );
+					printf(" item.ma21    = %.02f\n", daydata.ma21   );
+					printf(" item.ma34    = %.02f\n", daydata.ma34   );
+					printf(" item.ma55    = %.02f\n", daydata.ma55   );
+					printf(" item.ma89    = %.02f\n", daydata.ma89   );
+					printf(" item.ma144   = %.02f\n", daydata.ma144  );
+					printf(" item.ma233   = %.02f\n", daydata.ma233  );
+					printf(" item.macd    = %.02f\n", daydata.macd   );
+					printf(" item.diff    = %.02f\n", daydata.diff   );
+					printf(" item.dea     = %.02f\n", daydata.dea    );
+					printf(" item.bollupr = %.02f\n", daydata.bollupr);
+					printf(" item.bollmid = %.02f\n", daydata.bollmid);
+					printf(" item.bolldwn = %.02f\n", daydata.bolldwn);
+					printf(" item.cci14   = %.02f\n", daydata.cci14  );
+					printf(" item.cci21   = %.02f\n", daydata.cci21  );
+					printf(" item.cci55   = %.02f\n", daydata.cci55  );
 #endif
-                }
+				}
 
 				linelen = 0;
 				while ((*cpwork == 0x0D) || (*cpwork == 0x0A) ) cpwork++;
@@ -382,7 +334,7 @@ int load_csv(char *filename)
 		memsize = sizeof(stock_data) + day_cnt * sizeof(day_data);
 		new_mem = (stock_data*)malloc( (size_t)(memsize) );
 		memcpy(new_mem, stock, memsize);
-		
+
 		free(cpmem);
 		stock_mem[stock_cnt++] = new_mem;
 	}
