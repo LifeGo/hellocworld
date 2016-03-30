@@ -1,4 +1,4 @@
-
+#include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "memory.h"
@@ -167,28 +167,28 @@ int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 	strcpy(oname, item[1]);
 
 	oitem->date 	= str_to_date(item[2]);
-	oitem->price.open 	= atof(item[3 ]);
-	oitem->price.close 	= atof(item[4 ]);
-	oitem->price.high 	= atof(item[5 ]);
-	oitem->price.low 	= atof(item[6 ]);
-	oitem->mama.ma5 	= atof(item[7 ]);
-	oitem->mama.ma10 	= atof(item[8 ]);
-	oitem->mama.ma13 	= atof(item[9 ]);
-	oitem->mama.ma21 	= atof(item[10]);
-	oitem->mama.ma34 	= atof(item[11]);
-	oitem->mama.ma55 	= atof(item[12]);
-	oitem->mama.ma89 	= atof(item[13]);
-	oitem->mama.ma144 	= atof(item[14]);
-	oitem->mama.ma233 	= atof(item[15]);
-	oitem->macd.macd 	= atof(item[16]);
-	oitem->macd.diff 	= atof(item[17]);
-	oitem->macd.dea 	= atof(item[18]);
-	oitem->boll.upr 	= atof(item[19]);
-	oitem->boll.mid 	= atof(item[20]);
-	oitem->boll.dwn 	= atof(item[21]);
-	oitem->cci.cci14 	= atof(item[22]);
-	oitem->cci.cci21 	= atof(item[23]);
-	oitem->cci.cci55 	= atof(item[24]);
+	oitem->price.open   = (float)atof(item[3 ]);
+	oitem->price.close  = (float)atof(item[4 ]);
+	oitem->price.high   = (float)atof(item[5 ]);
+	oitem->price.low    = (float)atof(item[6 ]);
+	oitem->mama.ma5     = (float)atof(item[7 ]);
+	oitem->mama.ma10    = (float)atof(item[8 ]);
+	oitem->mama.ma13    = (float)atof(item[9 ]);
+	oitem->mama.ma21    = (float)atof(item[10]);
+	oitem->mama.ma34    = (float)atof(item[11]);
+	oitem->mama.ma55    = (float)atof(item[12]);
+	oitem->mama.ma89    = (float)atof(item[13]);
+	oitem->mama.ma144   = (float)atof(item[14]);
+	oitem->mama.ma233   = (float)atof(item[15]);
+	oitem->macd.macd    = (float)atof(item[16]);
+	oitem->macd.diff    = (float)atof(item[17]);
+	oitem->macd.dea     = (float)atof(item[18]);
+	oitem->boll.upr     = (float)atof(item[19]);
+	oitem->boll.mid     = (float)atof(item[20]);
+	oitem->boll.dwn     = (float)atof(item[21]);
+	oitem->cci.cci14    = (float)atof(item[22]);
+	oitem->cci.cci21    = (float)atof(item[23]);
+	oitem->cci.cci55    = (float)atof(item[24]);
 
 	return cnt;
 }
@@ -214,7 +214,6 @@ int load_csv(char *filename)
 	stock_data *new_mem;
 
 	char line_buf[MAX_LINE_LENGTH];
-	char *item[MAX_LINE_LENGTH];
 
 	fin = fopen((char *)filename, "rb");
 	if (fin)
@@ -382,18 +381,23 @@ int int_sort(int *array, int len)
 
 int get_tradeday_list()
 {
+	int idx = 0;
+	int idy = 0;
+	int idz = 0;
+	int *day1 = NULL;
+	int *day2 = NULL;
 	trade_date *tdate = groot.tradedate;
 
 	printf("tdate->used= %d\n", tdate->used);
-	for (int idx=0; idx<groot.stockmap->used; idx++)
+	for (idx=0; idx<groot.stockmap->used; idx++)
 	{
 		stock_data *stock = (stock_data *)groot.stockmap->stocks[idx];
 
-		for (int idy=0; idy<stock->records; idy++)
+		for (idy=0; idy<stock->records; idy++)
 		{
 			int find  = 0;
 			int today = stock->data[idy].date;
-			for (int idz=0; idz<tdate->used; idz++)
+			for (idz=0; idz<tdate->used; idz++)
 			{
 				if (today == tdate->date[idz])
 				{
@@ -410,9 +414,9 @@ int get_tradeday_list()
 
 	int_sort(tdate->date, tdate->used);
 
-	int *day1 = tdate->date;
-	int *day2 = day1 + 1;
-	for (int idx=0; idx<tdate->used-1; idx++)
+	day1 = tdate->date;
+	day2 = day1 + 1;
+	for (idx=0; idx<tdate->used-1; idx++)
 	{
 		printf("%d\n", *day1);
 		if ( *day1 >= *day2 )
@@ -427,6 +431,7 @@ int get_tradeday_list()
 
 int mem_dump(char *file)
 {
+	int idx = 0;
 	FILE *fpout;
 	section_block section;
 
@@ -453,7 +458,7 @@ int mem_dump(char *file)
 		fwrite(&section, sizeof(section_block), 1, fpout);
 
 		/* stock_data */
-		for (int idx=0; idx<groot.stockmap->used; idx++)
+		for (idx=0; idx<groot.stockmap->used; idx++)
 		{
 			stock_data *stock = (stock_data *)groot.stockmap->stocks[idx];
 
@@ -477,8 +482,8 @@ int mem_load(char *file)
 	int size = 0;
 	int count = 0;
 	FILE *fpin;
-	stock_data *stock;
 	section_block section;
+	stock_data *sd = NULL;
 
 	fpin = fopen((char *)file, "rb");
 	if (fpin)
@@ -525,7 +530,7 @@ int mem_load(char *file)
 			}
 
 			/* stock_data */
-			stock_data *sd = malloc( (size_t)(section.size) );
+			sd = malloc( (size_t)(section.size) );
 			if (!sd)
 			{
 				ret = -5;
@@ -554,22 +559,22 @@ int back_test_go(backtest *bt)
 	int beg   = 20100101;
 	int end   = 20101231;
 	int days  = 0;
-	stock_data *stock;
+	int *today;
 
 	if (bt == NULL) return -1;
 
 	beg = bt->beg;
 	end = bt->end;
 
-	int *today = groot.tradedate->date;
+	today = groot.tradedate->date;
 	while (*today < beg) today++;
 
 	while ( (*today) && (*today <= end) )
 	{
-		for (int idx=0; idx<groot.stockmap->used; idx++)
+		for (idx=0; idx<groot.stockmap->used; idx++)
 		{
 			stock_data *stock = (stock_data *)groot.stockmap->stocks[idx];
-			for (int idy=0; idy<stock->records; idy++)
+			for (idy=0; idy<stock->records; idy++)
 			{
 				int m_date = stock->data[idy].date;
 				if (m_date  == *today)
@@ -601,6 +606,8 @@ int main(int argc, char **argv)
 	int ftest = 0;
 	char key = 0;
 	char *findex = NULL;
+	index_file *idxfile = NULL;
+	backtest btargv;
 
 	for (idx=1; idx<argc; idx++)
 	{
@@ -637,12 +644,11 @@ int main(int argc, char **argv)
 		printf("Press any key to start backtest ...");
 		key = getchar();
 
-		backtest btargv;
 		btargv.beg = 20100101;
 		btargv.end = 20110101;
 		btargv.max_stock = 20;
 		btargv.money = 100 * 10000.00;
-		btargv.taxrate = 0.001;
+		btargv.taxrate = 0.001f;
 
 		back_test_go(&btargv);
 
@@ -660,7 +666,7 @@ int main(int argc, char **argv)
 	{
 		ret = load_index(findex);
 
-		index_file *idxfile = groot.indexfile;
+		idxfile = groot.indexfile;
 		for (idx=0; idx<idxfile->used; idx++)
 		{
 			printf("load %s\n", idxfile->name[idx]);
