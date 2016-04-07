@@ -98,7 +98,7 @@ int str_to_date(char *istr)
 			date[idx++] = *cp;
 		else if (*cp != '-')
 		{
-			printf("**<%s>**\n", istr);
+			printf("--**<%s>**--\n", istr);
 			return DEFAULT_DATE;
 		}
 
@@ -137,8 +137,8 @@ int str_to_stockid(char *istr)
 int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 {
 	int cnt = 0;
-	int first = 0;
-	char *cp= ibuf;
+	char *cp = ibuf;
+	char *cpb= ibuf;
 	char *item[128];
 
 	if ( (ibuf == NULL) || (ocode == NULL) || (oname == NULL) || (oitem == NULL) )
@@ -146,49 +146,57 @@ int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 
 	while (*cp != '\0')
 	{
-		if( (*cp == '@') || (*cp == '#') || (*cp == '$') )
-			return 0;
-
-		if ( (*cp == '\t') || (*cp == ' ') || (*cp == ',') )
+		while ( (*cp == '\t') || (*cp == ' ') )
 		{
 			*cp++ = '\0';;
-			first = 1;
-			continue;
+			cpb = cp;
 		}
-		if (first == 1)
+
+		while (*cp != ',')
 		{
-			first = 0;
-			item[cnt++] = cp;
+			if( (*cp == '@') || (*cp == '#') || (*cp == '$') )
+				return 0;
+			cp++;
+		}
+		*cp = '\0';;
+
+		if (cp != cpb)
+		{
+			item[cnt++] = cpb;
 		}
 		cp++;
 	}
 
-	strcpy(ocode, item[0]);
-	strcpy(oname, item[1]);
+	if (cnt >= 26)
+	{
+		strcpy(ocode, item[0]);
+		strcpy(oname, item[1]);
 
-	oitem->date 	= str_to_date(item[2]);
-	oitem->price.open   = (float)atof(item[3 ]);
-	oitem->price.close  = (float)atof(item[4 ]);
-	oitem->price.high   = (float)atof(item[5 ]);
-	oitem->price.low    = (float)atof(item[6 ]);
-	oitem->mama.ma5     = (float)atof(item[7 ]);
-	oitem->mama.ma10    = (float)atof(item[8 ]);
-	oitem->mama.ma13    = (float)atof(item[9 ]);
-	oitem->mama.ma21    = (float)atof(item[10]);
-	oitem->mama.ma34    = (float)atof(item[11]);
-	oitem->mama.ma55    = (float)atof(item[12]);
-	oitem->mama.ma89    = (float)atof(item[13]);
-	oitem->mama.ma144   = (float)atof(item[14]);
-	oitem->mama.ma233   = (float)atof(item[15]);
-	oitem->macd.macd    = (float)atof(item[16]);
-	oitem->macd.diff    = (float)atof(item[17]);
-	oitem->macd.dea     = (float)atof(item[18]);
-	oitem->boll.upr     = (float)atof(item[19]);
-	oitem->boll.mid     = (float)atof(item[20]);
-	oitem->boll.dwn     = (float)atof(item[21]);
-	oitem->cci.cci14    = (float)atof(item[22]);
-	oitem->cci.cci21    = (float)atof(item[23]);
-	oitem->cci.cci55    = (float)atof(item[24]);
+		oitem->date 	= str_to_date(item[2]);
+		oitem->price.open   = (float)atof(item[3 ]);
+		oitem->price.close  = (float)atof(item[4 ]);
+		oitem->price.high   = (float)atof(item[5 ]);
+		oitem->price.low    = (float)atof(item[6 ]);
+		oitem->mama.ma5     = (float)atof(item[7 ]);
+		oitem->mama.ma10    = (float)atof(item[8 ]);
+		oitem->mama.ma13    = (float)atof(item[9 ]);
+		oitem->mama.ma21    = (float)atof(item[10]);
+		oitem->mama.ma34    = (float)atof(item[11]);
+		oitem->mama.ma55    = (float)atof(item[12]);
+		oitem->mama.ma89    = (float)atof(item[13]);
+		oitem->mama.ma144   = (float)atof(item[14]);
+		oitem->mama.ma233   = (float)atof(item[15]);
+		oitem->macd.macd    = (float)atof(item[16]);
+		oitem->macd.diff    = (float)atof(item[17]);
+		oitem->macd.dea     = (float)atof(item[18]);
+		oitem->boll.upr     = (float)atof(item[19]);
+		oitem->boll.mid     = (float)atof(item[20]);
+		oitem->boll.dwn     = (float)atof(item[21]);
+		oitem->cci.cci14    = (float)atof(item[22]);
+		oitem->cci.cci21    = (float)atof(item[23]);
+		oitem->cci.cci55    = (float)atof(item[24]);
+		oitem->cci.cci89    = (float)atof(item[25]);
+	}
 
 	return cnt;
 }
@@ -672,8 +680,6 @@ int main(int argc, char **argv)
 			printf("load %s\n", idxfile->name[idx]);
 			ret = load_csv(idxfile->name[idx]);
 		}
-
-		ret = load_csv(idxfile->name[idx]);
 
 		get_tradeday_list();
 	}

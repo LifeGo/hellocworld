@@ -23,6 +23,7 @@ typedef struct _tag_cci_data
 	float cci14;
 	float cci21;
 	float cci55;
+	float cci89;
 } cci_data;
 
 typedef struct _tag_mama_data
