@@ -12,6 +12,13 @@ typedef struct _tag_section_block
 	int  chk1;
 } section_block;
 
+typedef struct _tag_stock_list_
+{
+	int used;
+	int code[MAX_STOCKS];
+	int name[MAX_STOCKS][16];
+} stock_list;
+
 typedef struct _tag_trade_date
 {
 	int used;
@@ -81,6 +88,23 @@ typedef struct _tag_day_item
 	//CCI14@,CCI21@,CCI55@
 	cci_data   cci;
 } day_data;
+
+typedef struct _tag_idate
+{
+	int date;
+	int time;
+} idate;
+
+typedef struct _tag_m15_item
+{
+	int date;
+	int time;
+	float open;
+	float close;
+	float high;
+	float low;
+	float volume;
+} m15_data;;
 
 typedef struct _tag_stock_data
 {

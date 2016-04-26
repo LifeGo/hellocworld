@@ -80,34 +80,54 @@ int load_index(char *filename)
 	return 0;
 }
 
-//"1997-07-04" to "19970704"
+//"2005-01-04 09:45:00" to { 20050104,800945 }
+//"1997-07-04" to { 19970704, 0 }
+//"2005-01-04" to 20050104
+//"09:45:00"   to 800945
 #define DEFAULT_DATE            (19770812)
-int str_to_date(char *istr)
+#define DEFAULT_TIME            (800945)
+int str_to_date(char *istr, idate *odate)
 {
 	int idx = 0;
-	int idate = DEFAULT_DATE;
-	char date[12];
+	int type = 0;
+	char buf[16];
 	char *cp = istr;
 
-	if (cp == NULL)
-		return DEFAULT_DATE;
+	if ( (cp == NULL) || (odate == NULL) )
+		return 0;
+
+	odate->date = DEFAULT_DATE;
+	odate->time = DEFAULT_TIME;
+
+	while ( (*cp == '\t') || (*cp == ' ') )
+		cp++;
 
 	while (*cp != '\0')
 	{
-		if ( (*cp >= '0') && (*cp <= '9') && (*cp != '-') )
-			date[idx++] = *cp;
-		else if (*cp != '-')
-		{
-			printf("--**<%s>**--\n", istr);
-			return DEFAULT_DATE;
-		}
-
+		if ( (*cp >= '0') && (*cp <= '9') && (*cp != ' ') && (*cp != '-') && (*cp != ':') )
+			buf[idx++] = *cp;
 		cp++;
+
+		if ( (8 == idx) && (0 == type) )
+		{
+			buf[idx] = '\0';
+			odate->date = atoi(buf);
+
+			idx = 0;
+			buf[idx++] = '8';
+			buf[idx++] = '0';
+			type++;
+		}
+		else if ( (8 == idx) && (1 == type) )
+		{
+			buf[idx] = '\0';
+			odate->time = atoi(buf) / 100;
+			idx = 0;
+			type++;
+		}
 	}
 
-	date[idx] = '\0';
-
-	return atoi(date);
+	return type;
 }
 
 int str_to_stockid(char *istr)
@@ -134,14 +154,14 @@ int str_to_stockid(char *istr)
 	return atoi(date);
 }
 
-int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
+int parse_line(char *ibuf, char *ocode, char *oname, day_data *oday, m15_data *om15)
 {
 	int cnt = 0;
 	char *cp = ibuf;
 	char *cpb= ibuf;
 	char *item[128];
 
-	if ( (ibuf == NULL) || (ocode == NULL) || (oname == NULL) || (oitem == NULL) )
+	if ( (ibuf == NULL) || (ocode == NULL) || (oname == NULL)  || (oday == NULL) || (om15 == NULL) )
 		return -1;
 
 	while (*cp != '\0')
@@ -149,9 +169,9 @@ int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 		while ( (*cp == '\t') || (*cp == ' ') )
 		{
 			*cp++ = '\0';;
-			cpb = cp;
 		}
 
+		cpb = cp;
 		while (*cp != ',')
 		{
 			if( (*cp == '@') || (*cp == '#') || (*cp == '$') )
@@ -167,35 +187,54 @@ int parse_line(char *ibuf, char *ocode, char *oname, day_data *oitem)
 		cp++;
 	}
 
-	if (cnt >= 26)
+	if (cnt >= 26) // .day data
 	{
+		idate mdate;
+		int type = str_to_date(item[2], &mdate);
+
 		strcpy(ocode, item[0]);
 		strcpy(oname, item[1]);
 
-		oitem->date 	= str_to_date(item[2]);
-		oitem->price.open   = (float)atof(item[3 ]);
-		oitem->price.close  = (float)atof(item[4 ]);
-		oitem->price.high   = (float)atof(item[5 ]);
-		oitem->price.low    = (float)atof(item[6 ]);
-		oitem->mama.ma5     = (float)atof(item[7 ]);
-		oitem->mama.ma10    = (float)atof(item[8 ]);
-		oitem->mama.ma13    = (float)atof(item[9 ]);
-		oitem->mama.ma21    = (float)atof(item[10]);
-		oitem->mama.ma34    = (float)atof(item[11]);
-		oitem->mama.ma55    = (float)atof(item[12]);
-		oitem->mama.ma89    = (float)atof(item[13]);
-		oitem->mama.ma144   = (float)atof(item[14]);
-		oitem->mama.ma233   = (float)atof(item[15]);
-		oitem->macd.macd    = (float)atof(item[16]);
-		oitem->macd.diff    = (float)atof(item[17]);
-		oitem->macd.dea     = (float)atof(item[18]);
-		oitem->boll.upr     = (float)atof(item[19]);
-		oitem->boll.mid     = (float)atof(item[20]);
-		oitem->boll.dwn     = (float)atof(item[21]);
-		oitem->cci.cci14    = (float)atof(item[22]);
-		oitem->cci.cci21    = (float)atof(item[23]);
-		oitem->cci.cci55    = (float)atof(item[24]);
-		oitem->cci.cci89    = (float)atof(item[25]);
+		oday->date = mdate.date;
+		oday->price.open   = (float)atof(item[3 ]);
+		oday->price.close  = (float)atof(item[4 ]);
+		oday->price.high   = (float)atof(item[5 ]);
+		oday->price.low    = (float)atof(item[6 ]);
+		oday->mama.ma5     = (float)atof(item[7 ]);
+		oday->mama.ma10    = (float)atof(item[8 ]);
+		oday->mama.ma13    = (float)atof(item[9 ]);
+		oday->mama.ma21    = (float)atof(item[10]);
+		oday->mama.ma34    = (float)atof(item[11]);
+		oday->mama.ma55    = (float)atof(item[12]);
+		oday->mama.ma89    = (float)atof(item[13]);
+		oday->mama.ma144   = (float)atof(item[14]);
+		oday->mama.ma233   = (float)atof(item[15]);
+		oday->macd.macd    = (float)atof(item[16]);
+		oday->macd.diff    = (float)atof(item[17]);
+		oday->macd.dea     = (float)atof(item[18]);
+		oday->boll.upr     = (float)atof(item[19]);
+		oday->boll.mid     = (float)atof(item[20]);
+		oday->boll.dwn     = (float)atof(item[21]);
+		oday->cci.cci14    = (float)atof(item[22]);
+		oday->cci.cci21    = (float)atof(item[23]);
+		oday->cci.cci55    = (float)atof(item[24]);
+		oday->cci.cci89    = (float)atof(item[25]);
+	}
+	else if (cnt >= 8) // .m15 data
+	{
+		idate mdate;
+		str_to_date(item[2], &mdate);
+
+		strcpy(ocode, item[0]);
+		strcpy(oname, item[1]);
+
+		om15->date	 = mdate.date;
+		om15->time   = mdate.time; 
+		om15->open   = (float)atof(item[3]);
+		om15->close  = (float)atof(item[4]);
+		om15->high   = (float)atof(item[5]);
+		om15->low    = (float)atof(item[6]);
+		om15->volume = (float)atof(item[7]);
 	}
 
 	return cnt;
@@ -217,7 +256,11 @@ int load_csv(char *filename)
 	char sname[16];
 	char scode[16];
 	int  day_cnt = 0;
+	int  m15_cnt = 0;
 	day_data daydata;
+	m15_data m15data;
+	m15_data *m15work;
+	m15_data *m15head;
 	stock_data *stock;
 	stock_data *new_mem;
 
@@ -241,6 +284,8 @@ int load_csv(char *filename)
 		cpwork = cpmem;
 		cpend  = cpmem + filelen;
 		stock  = (stock_data*) (cpend + 64);
+		m15head = (m15_data *) (cpend + 64);
+		m15work = m15head;
 		*(cpend+0) = 0x0D;
 		*(cpend+1) = 0x0A;
 
@@ -267,13 +312,19 @@ int load_csv(char *filename)
 			{
 				line_buf[linelen++] = '\0';
 				line_buf[linelen  ] = '\0';
-				cnt = parse_line(line_buf, scode, sname, &daydata);
-				if (cnt > 0)
+				cnt = parse_line(line_buf, scode, sname, &daydata, &m15data);
+				if (cnt >= 26)
 				{
 					if (stock->code[0] == '\0') strcpy(stock->code, scode);
 					if (stock->name[0] == '\0') strcpy(stock->name, sname);
 					memcpy(&stock->data[day_cnt], &daydata, sizeof(day_data));
 					day_cnt++;
+				}
+				else if (cnt >= 8)
+				{
+					memcpy(m15work, &m15data, sizeof(m15_data));
+					m15work++;
+					m15_cnt++;
 				}
 
 				linelen = 0;
@@ -294,6 +345,25 @@ int load_csv(char *filename)
 
 				groot.stockmap->stocks[groot.stockmap->used++] = new_mem;
 			}
+		}
+		if (m15_cnt > 0)
+		{
+			section_block section;
+			FILE *fpout = NULL;
+
+			sprintf(line_buf, "./mem/%s.m15", scode);
+			printf("mem: %s\n", line_buf);
+			fpout = fopen(line_buf, "w");
+
+			/* head */
+			memset(&section, 0x00, sizeof(section_block));
+			sprintf(section.name, ".section=<%s>", ".m15");
+			section.size = m15_cnt;
+			fwrite(&section, sizeof(section_block), 1, fpout);
+
+			/* m15_data[] */
+			fwrite(m15head, sizeof(m15_data)*m15_cnt, 1, fpout);
+			fclose(fpout);
 		}
 
 		free(cpmem);
@@ -389,6 +459,7 @@ int int_sort(int *array, int len)
 
 int get_tradeday_list()
 {
+	int chk = 0;
 	int idx = 0;
 	int idy = 0;
 	int idz = 0;
@@ -396,7 +467,7 @@ int get_tradeday_list()
 	int *day2 = NULL;
 	trade_date *tdate = groot.tradedate;
 
-	printf("tdate->used= %d\n", tdate->used);
+	printf("tdate->used = %d\n", tdate->used);
 	for (idx=0; idx<groot.stockmap->used; idx++)
 	{
 		stock_data *stock = (stock_data *)groot.stockmap->stocks[idx];
@@ -421,18 +492,34 @@ int get_tradeday_list()
 	}
 
 	int_sort(tdate->date, tdate->used);
+	printf("tdate->used = %d\n", tdate->used);
 
 	day1 = tdate->date;
 	day2 = day1 + 1;
 	for (idx=0; idx<tdate->used-1; idx++)
 	{
-		printf("%d\n", *day1);
 		if ( *day1 >= *day2 )
-			printf("ERROR: idx = %d\n", idx);
+		{
+			printf("ERROR: idx=%d <day1=%d,day2=%d>\n", idx, *day1, *day2);
+			chk++;
+		}
 		day1++;
 		day2++;
 	}
-	printf("tdate->used= %d\n", tdate->used);
+
+	if (chk)
+	{
+		day1 = tdate->date;
+		for (idx=0; idx<tdate->used; idx++)
+		{
+			printf("[%d]:%d\n", idx, *day1);
+		}
+	}
+
+	day1 = tdate->date;
+	printf("FirstDay: %d\n", *day1);
+	day1 += tdate->used - 1;
+	printf("LastDay : %d\n", *day1);
 
 	return 1;
 }
@@ -604,6 +691,50 @@ int back_test_go(backtest *bt)
 	return 1;
 }
 
+int check_go()
+{
+	int idx   = 0;
+	int idy   = 0;
+	int date_min = 0;
+	int date_max = 0;
+	float close_min = 1000.0f;
+	float close_max = 0;
+
+	for (idx=0; idx<groot.stockmap->used; idx++)
+	{
+		close_min = 1000.0f;
+		close_max = 0.0f;
+
+		stock_data *stock = (stock_data *)groot.stockmap->stocks[idx];
+		for (idy=0; idy<stock->records; idy++)
+		{
+
+			if (close_min > stock->data[idy].price.close)
+			{
+				close_min = stock->data[idy].price.close;
+				date_min  = stock->data[idy].date;
+			}
+			if (close_max < stock->data[idy].price.close)
+			{
+				close_max = stock->data[idy].price.close;
+				date_max  = stock->data[idy].date;
+			}
+		}
+
+		close_min = stock->data[0].price.close;
+		date_min  = stock->data[0].date;
+		if (close_min < 0.01) close_min = 0.01;
+		if (close_max < 0.01) close_max = 0.01;
+		printf("%s, %6.02f, %d, %6.02f, %d, %6.02f\n",
+				stock->code,
+				close_max, date_max,
+				close_min, date_min,
+				close_max / close_min);
+	}
+
+	return 1;
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 0;
@@ -658,7 +789,10 @@ int main(int argc, char **argv)
 		btargv.money = 100 * 10000.00;
 		btargv.taxrate = 0.001f;
 
-		back_test_go(&btargv);
+		//back_test_go(&btargv);
+		printf("\n\n");
+		check_go();
+		printf("\n\n");
 
 		printf("Press any key to release memory.");
 		key = getchar();
